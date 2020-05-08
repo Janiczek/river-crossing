@@ -57,9 +57,6 @@ viewGraph topology state =
         dot =
             "digraph G { start -> a0; start -> b0; }"
     in
-    Html.node "viz-js"
-        [ Attrs.attribute "dotcontent" dot
-        , Attrs.attribute "format" "svg"
-        , Attrs.attribute "engine" "dot"
-        ]
+    Html.node "x-viz"
+        [ Attrs.attribute "dot" dot ]
         []
