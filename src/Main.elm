@@ -20,41 +20,46 @@ with, I guess, the aesthetics of the "initial" state.
 
 -}
 
-import Bag exposing (Bag)
-import Graph exposing (Graph)
 import Html exposing (Html)
-
-
-type alias Problem =
-    { initial : Graph Land ()
-    , current : Graph Land ()
-    , goal : Graph Land ()
-    }
-
-
-type alias Land =
-    { entities : Bag Entity -- there can be multiple of each entity!
-    , hasBoat : Bool
-    }
-
-
-{-| TODO do we want some more?
-
-  - Fox, Goose, Bag of Beans?
-  - Jealous Husbands?
-  - Missionaries and Cannibals?
-  - Bridge and Torch problem?
-  - Boat weight problem?
-
-More details here: <https://en.wikipedia.org/wiki/River_crossing_puzzle>
-
--}
-type Entity
-    = Wolf
-    | Goat
-    | Cabbage
+import Html.Attributes as Attrs
+import Level
+import Problem exposing (Problem, ProblemState)
+import Topology exposing (Topology)
 
 
 main : Html msg
 main =
-    Html.text "TODO"
+    viewLevel Level.canonical
+
+
+viewLevel : Problem -> Html msg
+viewLevel p =
+    Html.div []
+        [ Html.div []
+            [ Html.text "Initial"
+            , viewGraph p.topology p.initial
+            ]
+        , Html.div []
+            [ Html.text "Current"
+            , viewGraph p.topology p.current
+            ]
+        , Html.div []
+            [ Html.text "Goal"
+            , viewGraph p.topology p.goal
+            ]
+        ]
+
+
+viewGraph : Topology -> ProblemState -> Html msg
+viewGraph topology state =
+    let
+        -- TODO use the arguments!
+        dot =
+            "digraph G { start -> a0; start -> b0; }"
+    in
+    Html.node "viz-js"
+        [ Attrs.attribute "dotcontent" dot
+        , Attrs.attribute "format" "svg"
+        , Attrs.attribute "engine" "dot"
+        ]
+        []

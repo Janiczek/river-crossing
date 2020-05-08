@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Oh no, that wolf again</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/lite.render.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/2.4.3/webcomponents-loader.js"></script>
+        <script src="vizjs-webcomponent.js"></script>
+        <script src="elm.js"></script>
+    </head>
+    <body>
+        <viz-js dotcontent="digraph G { start -> a0; start -> b0; }"></viz-js>
+        <!--
+        <div id="app"></div>
+        <script>
+            // HTML ids create implicit fields in window object!
+            Elm.Main.init({node: window.app});
+        </script>
+        -->
+    </body>
+</html>
+
