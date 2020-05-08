@@ -1,4 +1,4 @@
-module Bag exposing (Bag, empty, fromList, insert, remove)
+module Bag exposing (Bag, empty, fromList, insert, remove, toList)
 
 import AssocList as Dict exposing (Dict)
 
@@ -28,6 +28,14 @@ fromList list =
         insert
         empty
         list
+
+
+toList : Bag a -> List a
+toList bag =
+    Dict.foldl
+        (\key count acc -> List.append (List.repeat count key) acc)
+        []
+        bag
 
 
 insert : a -> Bag a -> Bag a

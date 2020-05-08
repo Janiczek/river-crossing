@@ -21,42 +21,10 @@ with, I guess, the aesthetics of the "initial" state.
 -}
 
 import Html exposing (Html)
-import Html.Attributes as Attrs
 import Level
-import Problem exposing (Problem, ProblemState)
-import Topology exposing (Topology)
+import Problem
 
 
 main : Html msg
 main =
-    viewLevel Level.canonical
-
-
-viewLevel : Problem -> Html msg
-viewLevel p =
-    Html.div []
-        [ Html.div []
-            [ Html.text "Initial"
-            , viewGraph p.topology p.initial
-            ]
-        , Html.div []
-            [ Html.text "Current"
-            , viewGraph p.topology p.current
-            ]
-        , Html.div []
-            [ Html.text "Goal"
-            , viewGraph p.topology p.goal
-            ]
-        ]
-
-
-viewGraph : Topology -> ProblemState -> Html msg
-viewGraph topology state =
-    let
-        -- TODO use the arguments!
-        dot =
-            "digraph G { start -> a0; start -> b0; }"
-    in
-    Html.node "x-viz"
-        [ Attrs.attribute "dot" dot ]
-        []
+    Problem.view Level.canonical

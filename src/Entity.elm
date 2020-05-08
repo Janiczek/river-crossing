@@ -1,4 +1,8 @@
-module Entity exposing (Entity(..), isDangerousFor)
+module Entity exposing
+    ( Entity(..)
+    , isDangerousFor
+    , toString
+    )
 
 {-| TODO do we want some more?
 
@@ -36,3 +40,16 @@ isDangerousFor prey predator =
 
         _ ->
             False
+
+
+toString : Entity -> String
+toString entity =
+    case entity of
+        Wolf ->
+            "Wolf"
+
+        Goat ->
+            "Goat"
+
+        Cabbage ->
+            "Cabbage"
