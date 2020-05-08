@@ -2,7 +2,7 @@ language: node_js
 node_js: node
 cache:
   directories:
-  - /home/travis/.elm
+  - "/home/travis/.elm"
   - node_modules
   - elm-stuff
 branches:
@@ -18,3 +18,6 @@ notifications:
   email:
     recipients:
     - martin@janiczek.cz
+env:
+  global:
+    secure: suhhsCfeNo2c4jXF26miPqrK3UlwU0VEnXtBSZ7keGhQLF6jNnOr364icKD+vcJY+v4F56W1fxpbt0aCSHvJiPsIupc288+9RM7af5XmFnl3cYtIdsWes+ZsH3laiC4qup4Gopu288j8vkktX6JuyLj0aOik676xTIpMoJqg9Y/QkuPt6zpkKgYGWXww6gGZOPskWZIoFjhptmTSXByEpdeFwRZhzbkeimSgLmc5RtSYmBVTkMFAS+aAuRzYMKynR9XxxXO6SwH+22lS70m8PFgIQsGQfb5cFnRwjsv/Ijg1rKOMwKxzx5MYEcTi9Gwm8yBjeEaChOwo96rYO7FPxEDzBE0rzyye7uIselC2FW+6VB659FLM5Q81SothvUfQIf0MV3Xaa0nU+TQBOAanarqxgTVjD2g0nQl8e/wL1Ez5H5CAG83fV5p37eW7zJpov8Wcdr+OFBaoNcIck2u0cOdxLfqa6Mc6lY3+CzpLrRBnzEck9uKBXBhXh2NLgeYe8+4gtsIUSJayCzB8uT6Fy+S+EJJxNc98brBsISOH20KtcWSIOk+V6tk1YH7XSyLXiBqeLaLo14BeIrU3T4mid832Y3HksztTtrm0ZJqiQPIWTqFyQjs5kNPcqXDQj2z51b3R0aLzhomyiun4iIjSW0PxoBgAtX6dAJIcNyvItEw=
