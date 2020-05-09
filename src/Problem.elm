@@ -2,15 +2,13 @@ module Problem exposing
     ( Problem
     , ProblemState
     , init
-    , view
+    , toDot
     )
 
 import AssocList as Dict exposing (Dict)
 import Bag
 import Entity
 import Graph exposing (Graph)
-import Html exposing (Html)
-import Html.Attributes as Attrs
 import Land exposing (Land)
 import Topology exposing (Topology)
 
@@ -115,28 +113,3 @@ toDot topology state =
         ++ String.join "" vertexStrings
         ++ String.join "" edgeStrings
         ++ "}"
-
-
-view : Problem -> Html msg
-view problem =
-    Html.div []
-        [ Html.div []
-            [ Html.text "Initial"
-            , viewGraph problem.topology problem.initial
-            ]
-        , Html.div []
-            [ Html.text "Current"
-            , viewGraph problem.topology problem.current
-            ]
-        , Html.div []
-            [ Html.text "Goal"
-            , viewGraph problem.topology problem.goal
-            ]
-        ]
-
-
-viewGraph : Topology -> ProblemState -> Html msg
-viewGraph topology state =
-    Html.node "x-viz"
-        [ Attrs.attribute "dot" <| toDot topology state ]
-        []

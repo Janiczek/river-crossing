@@ -22,7 +22,7 @@ with, I guess, the aesthetics of the "initial" state.
 
 import Html exposing (Html)
 import Level
-import Problem
+import Problem.View as Problem
 
 
 main : Html msg
