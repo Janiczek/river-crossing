@@ -1,6 +1,7 @@
 module Entity exposing
     ( Entity(..)
     , isDangerousFor
+    , toId
     , toString
     )
 
@@ -40,6 +41,19 @@ isDangerousFor prey predator =
 
         _ ->
             False
+
+
+toId : Entity -> String
+toId entity =
+    case entity of
+        Wolf ->
+            "wolf"
+
+        Goat ->
+            "goat"
+
+        Cabbage ->
+            "cabbage"
 
 
 toString : Entity -> String

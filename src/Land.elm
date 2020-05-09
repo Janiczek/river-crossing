@@ -1,4 +1,4 @@
-module Land exposing (Land)
+module Land exposing (Land, idFromString, idToString)
 
 {-| The vertex in our problem graph
 
@@ -19,3 +19,18 @@ type alias Land =
     , hasBoat : Bool
     , hasFarmer : Bool
     }
+
+
+idToString : Int -> String
+idToString n =
+    "land" ++ String.fromInt n
+
+
+idFromString : String -> Maybe Int
+idFromString string =
+    case String.split "land" string of
+        [ "", idString ] ->
+            String.toInt idString
+
+        _ ->
+            Nothing

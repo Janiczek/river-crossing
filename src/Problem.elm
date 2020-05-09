@@ -67,6 +67,7 @@ toDot topology state =
                         Dict.get id state
                             |> Maybe.map (Tuple.pair id)
                     )
+                |> List.sortBy Tuple.first
 
         toMaybe : a -> Bool -> Maybe a
         toMaybe value bool =
@@ -76,9 +77,45 @@ toDot topology state =
             else
                 Nothing
 
-        landId : Int -> String
-        landId id =
-            "land" ++ String.fromInt id
+        quoted : String -> String
+        quoted string =
+            "&quot;" ++ string ++ "&quot;"
+
+        tableTag : String
+        tableTag =
+            "<TABLE BORDER="
+                ++ quoted "0"
+                ++ " CELLBORDER="
+                ++ quoted "1"
+                ++ " CELLSPACING="
+                ++ quoted "0"
+                ++ " CELLPADDING="
+                ++ quoted "4"
+                ++ ">\n"
+
+        toRow : Int -> ( String, String ) -> String
+        toRow id ( itemId, itemLabel ) =
+            "<TR><TD ID="
+                ++ quoted (Land.idToString id ++ "." ++ itemId)
+                ++ " PORT="
+                ++ quoted itemId
+                ++ " HREF="
+                ++ quoted " "
+                ++ ">"
+                ++ itemLabel
+                ++ "</TD></TR>\n"
+
+        landTitleRow : Int -> String
+        landTitleRow landId =
+            "<TR><TD><B>Land " ++ String.fromInt landId ++ "</B></TD></TR>"
+
+        boatRow : Land -> String
+        boatRow land =
+            if land.hasBoat then
+                "<TR><TD COLOR=" ++ quoted "gray" ++ "><FONT COLOR=" ++ quoted "gray" ++ ">Boat</FONT></TD></TR>"
+
+            else
+                ""
 
         vertexStrings : List String
         vertexStrings =
@@ -86,19 +123,28 @@ toDot topology state =
                 |> List.map
                     (\( id, land ) ->
                         let
-                            everybody =
+                            clickables : List ( String, String )
+                            clickables =
                                 List.filterMap identity <|
-                                    toMaybe "Boat" land.hasBoat
-                                        :: toMaybe "Farmer" land.hasFarmer
+                                    toMaybe ( "farmer", "Farmer" ) land.hasFarmer
                                         :: (land.entities
                                                 |> Bag.toList
-                                                |> List.map (Just << Entity.toString)
+                                                |> List.map
+                                                    (\entity ->
+                                                        Just
+                                                            ( Entity.toId entity
+                                                            , Entity.toString entity
+                                                            )
+                                                    )
                                            )
                         in
-                        landId id
-                            ++ " [shape=record;label=\""
-                            ++ String.join "|" everybody
-                            ++ "\";];"
+                        Land.idToString id
+                            ++ " [label = < "
+                            ++ tableTag
+                            ++ landTitleRow id
+                            ++ boatRow land
+                            ++ String.join "" (List.map (toRow id) clickables)
+                            ++ "</TABLE> > ];\n"
                     )
 
         edgeStrings : List String
@@ -106,10 +152,13 @@ toDot topology state =
             edges
                 |> List.map
                     (\{ from, to } ->
-                        landId from ++ " -> " ++ landId to ++ ";"
+                        Land.idToString from
+                            ++ " -> "
+                            ++ Land.idToString to
+                            ++ ";\n"
                     )
     in
-    "digraph G {"
+    "digraph G { node [ shape = plain ];\n"
         ++ String.join "" vertexStrings
         ++ String.join "" edgeStrings
         ++ "}"

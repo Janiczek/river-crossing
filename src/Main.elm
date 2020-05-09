@@ -20,11 +20,126 @@ with, I guess, the aesthetics of the "initial" state.
 
 -}
 
+import Browser
+import Entity exposing (Entity(..))
 import Html exposing (Html)
+import Html.Attributes as Attrs
+import Html.Events as Events
+import Json.Decode as Decode exposing (Decoder)
+import Land
 import Level
-import Problem.View as Problem
+import Problem exposing (Problem, ProblemState)
+import Topology exposing (Topology)
 
 
-main : Html msg
+type alias Model =
+    { problem : Problem
+    }
+
+
+type Msg
+    = ItemClicked
+        { landId : Int
+        , item : ItemClicked
+        }
+
+
+type ItemClicked
+    = Entity Entity
+    | Farmer
+
+
+main : Program () Model Msg
 main =
-    Problem.view Level.canonical
+    Browser.document
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
+
+
+init : () -> ( Model, Cmd Msg )
+init () =
+    ( { problem = Level.canonical }
+    , Cmd.none
+    )
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case Debug.log "msg" msg of
+        ItemClicked { landId, item } ->
+            -- TODO
+            ( model
+            , Cmd.none
+            )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
+
+
+view : Model -> Browser.Document Msg
+view { problem } =
+    { title = "River Crossing"
+    , body =
+        [ viewDotGraph problem.topology problem.current
+        ]
+    }
+
+
+viewDotGraph : Topology -> ProblemState -> Html Msg
+viewDotGraph topology state =
+    Html.node "x-graphviz"
+        [ Attrs.attribute "dot" <| Problem.toDot topology state
+        , Events.on "x-graphviz-node-click" nodeClickDecoder
+        ]
+        []
+
+
+nodeClickDecoder : Decoder Msg
+nodeClickDecoder =
+    Decode.field "detail" <|
+        (Decode.field "id" Decode.string
+            |> Decode.andThen
+                (\string ->
+                    (case String.split "." string of
+                        [ landIdString, itemString ] ->
+                            let
+                                maybeItem : Maybe ItemClicked
+                                maybeItem =
+                                    case itemString of
+                                        "farmer" ->
+                                            Just Farmer
+
+                                        "wolf" ->
+                                            Just <| Entity Wolf
+
+                                        "goat" ->
+                                            Just <| Entity Goat
+
+                                        "cabbage" ->
+                                            Just <| Entity Cabbage
+
+                                        _ ->
+                                            Nothing
+                            in
+                            Maybe.map2
+                                (\landId item ->
+                                    ItemClicked
+                                        { landId = landId
+                                        , item = item
+                                        }
+                                )
+                                (Land.idFromString landIdString)
+                                maybeItem
+
+                        _ ->
+                            Nothing
+                    )
+                        |> Maybe.map Decode.succeed
+                        |> Maybe.withDefault (Decode.fail "Bad format of clicked item ID")
+                )
+        )

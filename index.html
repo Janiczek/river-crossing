@@ -9,7 +9,10 @@
         <script src="elm.js"></script>
     </head>
     <body>
-        <x-graphviz dot="digraph G { a -> b; a -> c; }" />
+        <div id="app"></div>
+        <script>
+            Elm.Main.init({node: window.app});
+        </script>
     </body>
 </html>
 
