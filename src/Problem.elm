@@ -117,6 +117,14 @@ toDot topology state =
             else
                 ""
 
+        farmerRow : Land -> String
+        farmerRow land =
+            if land.hasFarmer then
+                "<TR><TD COLOR=" ++ quoted "gray" ++ "><FONT COLOR=" ++ quoted "gray" ++ ">Farmer</FONT></TD></TR>"
+
+            else
+                ""
+
         vertexStrings : List String
         vertexStrings =
             lands
@@ -125,24 +133,21 @@ toDot topology state =
                         let
                             clickables : List ( String, String )
                             clickables =
-                                List.filterMap identity <|
-                                    toMaybe ( "farmer", "Farmer" ) land.hasFarmer
-                                        :: (land.entities
-                                                |> Bag.toList
-                                                |> List.map
-                                                    (\entity ->
-                                                        Just
-                                                            ( Entity.toId entity
-                                                            , Entity.toString entity
-                                                            )
-                                                    )
-                                           )
+                                land.entities
+                                    |> Bag.toList
+                                    |> List.map
+                                        (\entity ->
+                                            ( Entity.toId entity
+                                            , Entity.toString entity
+                                            )
+                                        )
                         in
                         Land.idToString id
                             ++ " [label = < "
                             ++ tableTag
                             ++ landTitleRow id
                             ++ boatRow land
+                            ++ farmerRow land
                             ++ String.join "" (List.map (toRow id) clickables)
                             ++ "</TABLE> > ];\n"
                     )

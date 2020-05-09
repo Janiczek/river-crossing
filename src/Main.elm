@@ -46,7 +46,6 @@ type Msg
 
 type ItemClicked
     = Entity Entity
-    | Farmer
 
 
 main : Program () Model Msg
@@ -70,6 +69,13 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case Debug.log "msg" msg of
         ItemClicked { landId, item } ->
+            itemClicked landId item model
+
+
+itemClicked : Int -> ItemClicked -> Model -> ( Model, Cmd Msg )
+itemClicked landId item model =
+    case item of
+        Entity entity ->
             -- TODO
             ( model
             , Cmd.none
@@ -111,9 +117,6 @@ nodeClickDecoder =
                                 maybeItem : Maybe ItemClicked
                                 maybeItem =
                                     case itemString of
-                                        "farmer" ->
-                                            Just Farmer
-
                                         "wolf" ->
                                             Just <| Entity Wolf
 
