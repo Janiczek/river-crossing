@@ -26,7 +26,7 @@ type alias LayoutGraph =
     }
 
 
-findPositions : LayoutSettings -> Graph vertex edge -> List ( vertex, Vec2 )
+findPositions : LayoutSettings -> Graph vertex edge -> Dict vertex Vec2
 findPositions layoutSettings graph =
     let
         vertices : List vertex
@@ -101,6 +101,7 @@ findPositions layoutSettings graph =
                     (Dict.get id vertexForId)
                     (Dict.get id finalLayoutGraph.positions)
             )
+        |> Dict.fromList
 
 
 iterate : (a -> a -> Bool) -> (a -> a) -> a -> a
