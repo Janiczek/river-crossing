@@ -45,15 +45,9 @@ isDangerousFor prey predator =
 
 toId : Entity -> String
 toId entity =
-    case entity of
-        Wolf ->
-            "wolf"
-
-        Goat ->
-            "goat"
-
-        Cabbage ->
-            "cabbage"
+    entity
+        |> toString
+        |> String.toLower
 
 
 toString : Entity -> String

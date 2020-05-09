@@ -20,20 +20,27 @@ with, I guess, the aesthetics of the "initial" state.
 
 -}
 
+import AssocList as Dict exposing (Dict)
+import Bag
 import Browser
 import Entity exposing (Entity(..))
+import Game exposing (InteractionState(..))
 import Html exposing (Html)
 import Html.Attributes as Attrs
 import Html.Events as Events
 import Json.Decode as Decode exposing (Decoder)
 import Land
 import Level
+import List.Extra
 import Problem exposing (Problem, ProblemState)
+import Problem.Dot as Problem
 import Topology exposing (Topology)
 
 
 type alias Model =
     { problem : Problem
+    , message : Maybe UserMessage
+    , interactionState : InteractionState
     }
 
 
@@ -46,6 +53,21 @@ type Msg
 
 type ItemClicked
     = Entity Entity
+    | Land
+
+
+type UserMessage
+    = CantMove
+        { landId : Int
+        , entity : Entity
+        , reason : CantMoveReason
+        }
+
+
+type CantMoveReason
+    = WouldStayAlone Entity Entity
+    | DoesntHaveBoat
+    | DoesntHaveFarmer
 
 
 main : Program () Model Msg
@@ -60,7 +82,10 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init () =
-    ( { problem = Level.canonical }
+    ( { problem = Level.canonical
+      , message = Nothing
+      , interactionState = DoingNothing
+      }
     , Cmd.none
     )
 
@@ -74,12 +99,123 @@ update msg model =
 
 itemClicked : Int -> ItemClicked -> Model -> ( Model, Cmd Msg )
 itemClicked landId item model =
-    case item of
-        Entity entity ->
-            -- TODO
-            ( model
-            , Cmd.none
+    case ( model.interactionState, item ) of
+        ( DoingNothing, Land ) ->
+            ( model, Cmd.none )
+
+        ( DoingNothing, Entity entity ) ->
+            hold landId entity model
+
+        ( HoldingEntity holded, Land ) ->
+            if landId == holded.landId then
+                doNothing model
+
+            else
+                tryToMoveTo landId holded model
+
+        ( HoldingEntity holded, Entity entity ) ->
+            if entity == holded.entity && landId == holded.landId then
+                doNothing model
+
+            else
+                hold landId entity model
+
+
+doNothing : Model -> ( Model, Cmd Msg )
+doNothing model =
+    ( { model | interactionState = DoingNothing }
+    , Cmd.none
+    )
+
+
+hold : Int -> Entity -> Model -> ( Model, Cmd Msg )
+hold landId entity model =
+    ( { model
+        | interactionState =
+            HoldingEntity
+                { landId = landId
+                , entity = entity
+                }
+      }
+    , Cmd.none
+    )
+
+
+tryToMoveTo : Int -> { landId : Int, entity : Entity } -> Model -> ( Model, Cmd Msg )
+tryToMoveTo newLandId holded model =
+    Dict.get holded.landId model.problem.current
+        |> Maybe.map
+            (\oldLand ->
+                if not oldLand.hasFarmer then
+                    ( { model
+                        | interactionState = DoingNothing
+                        , message =
+                            Just <|
+                                CantMove
+                                    { landId = holded.landId
+                                    , entity = holded.entity
+                                    , reason = DoesntHaveFarmer
+                                    }
+                      }
+                    , Cmd.none
+                    )
+
+                else if not oldLand.hasBoat then
+                    ( { model
+                        | interactionState = DoingNothing
+                        , message =
+                            Just <|
+                                CantMove
+                                    { landId = holded.landId
+                                    , entity = holded.entity
+                                    , reason = DoesntHaveBoat
+                                    }
+                      }
+                    , Cmd.none
+                    )
+
+                else
+                    let
+                        entityPairs : List ( Entity, Entity )
+                        entityPairs =
+                            oldLand.entities
+                                |> Bag.remove holded.entity
+                                |> Bag.uniques
+                                |> List.Extra.uniquePairs
+
+                        dangerousToEachOther : ( Entity, Entity ) -> Bool
+                        dangerousToEachOther ( e1, e2 ) =
+                            Entity.isDangerousFor e1 e2
+                                || Entity.isDangerousFor e2 e1
+                    in
+                    case List.filter dangerousToEachOther entityPairs of
+                        [] ->
+                            ( { model
+                                | interactionState = DoingNothing
+                                , problem =
+                                    Problem.moveTo
+                                        newLandId
+                                        holded
+                                        model.problem
+                              }
+                            , Cmd.none
+                            )
+
+                        ( e1, e2 ) :: _ ->
+                            ( { model
+                                | interactionState = DoingNothing
+                                , message =
+                                    Just <|
+                                        CantMove
+                                            { landId = holded.landId
+                                            , entity = holded.entity
+                                            , reason = WouldStayAlone e1 e2
+                                            }
+                              }
+                            , Cmd.none
+                            )
             )
+        |> Maybe.withDefault ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -88,18 +224,18 @@ subscriptions model =
 
 
 view : Model -> Browser.Document Msg
-view { problem } =
+view { problem, interactionState } =
     { title = "River Crossing"
     , body =
-        [ viewDotGraph problem.topology problem.current
+        [ viewDotGraph interactionState problem.topology problem.current
         ]
     }
 
 
-viewDotGraph : Topology -> ProblemState -> Html Msg
-viewDotGraph topology state =
+viewDotGraph : InteractionState -> Topology -> ProblemState -> Html Msg
+viewDotGraph interactionState topology state =
     Html.node "x-graphviz"
-        [ Attrs.attribute "dot" <| Problem.toDot topology state
+        [ Attrs.attribute "dot" <| Problem.toDot interactionState topology state
         , Events.on "x-graphviz-node-click" nodeClickDecoder
         ]
         []
@@ -111,7 +247,7 @@ nodeClickDecoder =
         (Decode.field "id" Decode.string
             |> Decode.andThen
                 (\string ->
-                    (case String.split "." string of
+                    (case String.split "." (Debug.log "string" string) of
                         [ landIdString, itemString ] ->
                             let
                                 maybeItem : Maybe ItemClicked
@@ -125,6 +261,9 @@ nodeClickDecoder =
 
                                         "cabbage" ->
                                             Just <| Entity Cabbage
+
+                                        "land" ->
+                                            Just Land
 
                                         _ ->
                                             Nothing

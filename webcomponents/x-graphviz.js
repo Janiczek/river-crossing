@@ -16,29 +16,31 @@ xtag.create('x-graphviz', class extends XTagElement {
       })
       .then(svgString => {
         setTimeout(() => { // this takes care of waiting for the HTML parsing etc.
-          const nodes = 
-            [...document.querySelectorAll('.node g')]
-              .filter(el => el.hasAttribute('id'));
-          this.addHandlers(nodes);
-          this.removeLinkAttributes(nodes);
+          [...document.querySelectorAll('.node g')]
+            .filter(el => el.hasAttribute('id'))
+            .forEach(el => {
+              this.addClickHandler(el);
+              this.removeLinkAttributes(el);
+              this.makeWholeGroupClickable(el);
+            });
         }, 0);
       });
   }
 
-  addHandlers (nodes) {
-    nodes.forEach(el => {
-      el.addEventListener('click', this.handleClick);
-    })
+  addClickHandler (el) {
+    el.addEventListener('click', this.handleClick);
   }
 
-  removeLinkAttributes(nodes) {
-    nodes.forEach(el => {
-      el.querySelectorAll('a')
-        .forEach(linkEl => {
-          linkEl.removeAttribute('xlink:href');
-          linkEl.removeAttribute('xlink:title');
-        });
-    });
+  removeLinkAttributes(el) {
+    el.querySelectorAll('a')
+      .forEach(linkEl => {
+        linkEl.removeAttribute('xlink:href');
+        linkEl.removeAttribute('xlink:title');
+      });
+  }
+
+  makeWholeGroupClickable(el) {
+    el.setAttribute('pointer-events', 'all');
   }
 
   handleClick() {
