@@ -6,7 +6,7 @@ module Problem.Dot exposing (toDot)
 import AssocList as Dict exposing (Dict)
 import Bag
 import Entity exposing (Entity)
-import Game exposing (InteractionState(..))
+import Game exposing (InteractionState(..), Item(..))
 import Graph
 import Land exposing (Land)
 import Problem exposing (ProblemState)
@@ -58,16 +58,16 @@ toDot interactionState topology state =
                 ++ quoted "4"
                 ++ ">\n"
 
-        toRow : Int -> Entity -> String
-        toRow landId entity =
+        toRow : Int -> Item -> String
+        toRow landId item =
             let
                 itemId : String
                 itemId =
-                    Entity.toId entity
+                    Game.itemToId item
 
                 itemLabel : String
                 itemLabel =
-                    Entity.toString entity
+                    Game.itemToString item
 
                 isActive : Bool
                 isActive =
@@ -75,8 +75,16 @@ toDot interactionState topology state =
                         DoingNothing ->
                             False
 
-                        HoldingEntity h ->
-                            h.entity == entity && h.landId == landId
+                        HoldingItem h ->
+                            h.item == item && h.landId == landId
+
+                color : String
+                color =
+                    if isActive then
+                        "blue"
+
+                    else
+                        "black"
             in
             "<TR><TD ID="
                 ++ quoted (Land.idToString landId ++ "." ++ itemId)
@@ -85,21 +93,9 @@ toDot interactionState topology state =
                 ++ " HREF="
                 ++ quoted " "
                 ++ " COLOR="
-                ++ quoted
-                    (if isActive then
-                        "blue"
-
-                     else
-                        "black"
-                    )
+                ++ quoted color
                 ++ "><FONT COLOR="
-                ++ quoted
-                    (if isActive then
-                        "blue"
-
-                     else
-                        "black"
-                    )
+                ++ quoted color
                 ++ ">"
                 ++ itemLabel
                 ++ "</FONT></TD></TR>\n"
@@ -124,30 +120,27 @@ toDot interactionState topology state =
             else
                 ""
 
-        farmerRow : Land -> String
-        farmerRow land =
-            if land.hasFarmer then
-                "<TR><TD COLOR=" ++ quoted "gray" ++ "><FONT COLOR=" ++ quoted "gray" ++ ">Farmer</FONT></TD></TR>"
-
-            else
-                ""
-
         vertexStrings : List String
         vertexStrings =
             lands
                 |> List.map
                     (\( landId, land ) ->
                         let
-                            clickables : List Entity
+                            clickables : List Item
                             clickables =
-                                Bag.toList land.entities
+                                List.map Entity (Bag.toList land.entities)
+                                    ++ (if land.hasFarmer then
+                                            [ Farmer ]
+
+                                        else
+                                            []
+                                       )
                         in
                         Land.idToString landId
                             ++ " [label = < "
                             ++ tableTag
                             ++ landTitleRow landId
                             ++ boatRow land
-                            ++ farmerRow land
                             ++ String.join "" (List.map (toRow landId) clickables)
                             ++ "</TABLE> > ];\n"
                     )

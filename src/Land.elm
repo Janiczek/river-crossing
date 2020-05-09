@@ -1,4 +1,4 @@
-module Land exposing (Land, idFromString, idToString)
+module Land exposing (Land, eq, idFromString, idToString)
 
 {-| The vertex in our problem graph
 
@@ -34,3 +34,10 @@ idFromString string =
 
         _ ->
             Nothing
+
+
+eq : Land -> Land -> Bool
+eq a b =
+    (a.hasBoat == b.hasBoat)
+        && (a.hasFarmer == b.hasFarmer)
+        && Bag.eq a.entities b.entities

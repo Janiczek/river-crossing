@@ -1,4 +1,4 @@
-module Bag exposing (Bag, empty, fromList, insert, remove, toList, uniques)
+module Bag exposing (Bag, empty, eq, fromList, insert, remove, toList, uniques)
 
 import AssocList as Dict exposing (Dict)
 
@@ -78,3 +78,8 @@ remove value bag =
 uniques : Bag a -> List a
 uniques bag =
     Dict.keys bag
+
+
+eq : Bag a -> Bag a -> Bool
+eq a b =
+    Dict.eq a b

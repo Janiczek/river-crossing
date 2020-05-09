@@ -21,10 +21,14 @@ with, I guess, the aesthetics of the "initial" state.
 -}
 
 import AssocList as Dict exposing (Dict)
-import Bag
+import Bag exposing (Bag)
 import Browser
 import Entity exposing (Entity(..))
-import Game exposing (InteractionState(..))
+import Game
+    exposing
+        ( InteractionState(..)
+        , Item(..)
+        )
 import Html exposing (Html)
 import Html.Attributes as Attrs
 import Html.Events as Events
@@ -47,22 +51,17 @@ type alias Model =
 type Msg
     = ItemClicked
         { landId : Int
-        , item : ItemClicked
+        , item : Item
         }
     | DismissMessage
     | Reset
-
-
-type ItemClicked
-    = Entity Entity
-    | Land
 
 
 type UserMessage
     = CantMove
         { oldLandId : Int
         , newLandId : Int
-        , entity : Entity
+        , item : Item
         , reason : CantMoveReason
         }
 
@@ -110,28 +109,34 @@ update msg model =
             )
 
 
-itemClicked : Int -> ItemClicked -> Model -> ( Model, Cmd Msg )
+itemClicked : Int -> Item -> Model -> ( Model, Cmd Msg )
 itemClicked landId item model =
     case ( model.interactionState, item ) of
         ( DoingNothing, Land ) ->
             ( model, Cmd.none )
 
-        ( DoingNothing, Entity entity ) ->
-            hold landId entity model
+        ( DoingNothing, Farmer ) ->
+            hold landId item model
 
-        ( HoldingEntity holded, Land ) ->
+        ( DoingNothing, Entity entity ) ->
+            hold landId item model
+
+        ( HoldingItem holded, Land ) ->
             if landId == holded.landId then
                 doNothing model
 
             else
                 tryToMoveTo landId holded model
 
-        ( HoldingEntity holded, Entity entity ) ->
-            if entity == holded.entity && landId == holded.landId then
+        ( HoldingItem holded, Farmer ) ->
+            ( model, Cmd.none )
+
+        ( HoldingItem holded, Entity entity ) ->
+            if item == holded.item && landId == holded.landId then
                 doNothing model
 
             else
-                hold landId entity model
+                hold landId item model
 
 
 doNothing : Model -> ( Model, Cmd Msg )
@@ -141,13 +146,13 @@ doNothing model =
     )
 
 
-hold : Int -> Entity -> Model -> ( Model, Cmd Msg )
-hold landId entity model =
+hold : Int -> Item -> Model -> ( Model, Cmd Msg )
+hold landId item model =
     ( { model
         | interactionState =
-            HoldingEntity
+            HoldingItem
                 { landId = landId
-                , entity = entity
+                , item = item
                 }
         , message = Nothing
       }
@@ -155,7 +160,7 @@ hold landId entity model =
     )
 
 
-tryToMoveTo : Int -> { landId : Int, entity : Entity } -> Model -> ( Model, Cmd Msg )
+tryToMoveTo : Int -> { landId : Int, item : Item } -> Model -> ( Model, Cmd Msg )
 tryToMoveTo newLandId holded model =
     Dict.get holded.landId model.problem.current
         |> Maybe.map
@@ -168,7 +173,7 @@ tryToMoveTo newLandId holded model =
                                 CantMove
                                     { oldLandId = holded.landId
                                     , newLandId = newLandId
-                                    , entity = holded.entity
+                                    , item = holded.item
                                     , reason = DoesntHaveFarmer
                                     }
                       }
@@ -183,7 +188,7 @@ tryToMoveTo newLandId holded model =
                                 CantMove
                                     { oldLandId = holded.landId
                                     , newLandId = newLandId
-                                    , entity = holded.entity
+                                    , item = holded.item
                                     , reason = DoesntHaveBoat
                                     }
                       }
@@ -192,10 +197,26 @@ tryToMoveTo newLandId holded model =
 
                 else
                     let
+                        bagWithoutEntity : Bag Entity
+                        bagWithoutEntity =
+                            case holded.item of
+                                Entity entity ->
+                                    oldLand.entities
+                                        |> Bag.remove entity
+
+                                Farmer ->
+                                    oldLand.entities
+
+                                Land ->
+                                    {- a bit of Impossible states being possible
+                                       here, with the Land being a possible Item
+                                       to hold... TODO
+                                    -}
+                                    oldLand.entities
+
                         entityPairs : List ( Entity, Entity )
                         entityPairs =
-                            oldLand.entities
-                                |> Bag.remove holded.entity
+                            bagWithoutEntity
                                 |> Bag.uniques
                                 |> List.Extra.uniquePairs
 
@@ -225,7 +246,7 @@ tryToMoveTo newLandId holded model =
                                         CantMove
                                             { oldLandId = holded.landId
                                             , newLandId = newLandId
-                                            , entity = holded.entity
+                                            , item = holded.item
                                             , reason = WouldStayAlone e1 e2
                                             }
                               }
@@ -244,7 +265,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "River Crossing"
     , body =
-        if model.problem.current == model.problem.goal then
+        if Problem.hasWon model.problem then
             viewWin
 
         else
@@ -296,9 +317,9 @@ viewMessage maybeMessage =
 messageToString : UserMessage -> String
 messageToString message =
     case message of
-        CantMove { oldLandId, newLandId, entity, reason } ->
+        CantMove { oldLandId, newLandId, item, reason } ->
             "Can't move "
-                ++ Entity.toString entity
+                ++ Game.itemToString item
                 ++ " from land "
                 ++ String.fromInt oldLandId
                 ++ " to land "
@@ -340,25 +361,6 @@ nodeClickDecoder =
                 (\string ->
                     (case String.split "." (Debug.log "string" string) of
                         [ landIdString, itemString ] ->
-                            let
-                                maybeItem : Maybe ItemClicked
-                                maybeItem =
-                                    case itemString of
-                                        "wolf" ->
-                                            Just <| Entity Wolf
-
-                                        "goat" ->
-                                            Just <| Entity Goat
-
-                                        "cabbage" ->
-                                            Just <| Entity Cabbage
-
-                                        "land" ->
-                                            Just Land
-
-                                        _ ->
-                                            Nothing
-                            in
                             Maybe.map2
                                 (\landId item ->
                                     ItemClicked
@@ -367,7 +369,7 @@ nodeClickDecoder =
                                         }
                                 )
                                 (Land.idFromString landIdString)
-                                maybeItem
+                                (Game.itemFromString itemString)
 
                         _ ->
                             Nothing
