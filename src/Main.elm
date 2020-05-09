@@ -49,6 +49,8 @@ type Msg
         { landId : Int
         , item : ItemClicked
         }
+    | DismissMessage
+    | Reset
 
 
 type ItemClicked
@@ -58,7 +60,8 @@ type ItemClicked
 
 type UserMessage
     = CantMove
-        { landId : Int
+        { oldLandId : Int
+        , newLandId : Int
         , entity : Entity
         , reason : CantMoveReason
         }
@@ -95,6 +98,16 @@ update msg model =
     case Debug.log "msg" msg of
         ItemClicked { landId, item } ->
             itemClicked landId item model
+
+        DismissMessage ->
+            ( { model | message = Nothing }
+            , Cmd.none
+            )
+
+        Reset ->
+            ( { model | problem = Problem.reset model.problem }
+            , Cmd.none
+            )
 
 
 itemClicked : Int -> ItemClicked -> Model -> ( Model, Cmd Msg )
@@ -136,6 +149,7 @@ hold landId entity model =
                 { landId = landId
                 , entity = entity
                 }
+        , message = Nothing
       }
     , Cmd.none
     )
@@ -152,7 +166,8 @@ tryToMoveTo newLandId holded model =
                         , message =
                             Just <|
                                 CantMove
-                                    { landId = holded.landId
+                                    { oldLandId = holded.landId
+                                    , newLandId = newLandId
                                     , entity = holded.entity
                                     , reason = DoesntHaveFarmer
                                     }
@@ -166,7 +181,8 @@ tryToMoveTo newLandId holded model =
                         , message =
                             Just <|
                                 CantMove
-                                    { landId = holded.landId
+                                    { oldLandId = holded.landId
+                                    , newLandId = newLandId
                                     , entity = holded.entity
                                     , reason = DoesntHaveBoat
                                     }
@@ -207,7 +223,8 @@ tryToMoveTo newLandId holded model =
                                 , message =
                                     Just <|
                                         CantMove
-                                            { landId = holded.landId
+                                            { oldLandId = holded.landId
+                                            , newLandId = newLandId
                                             , entity = holded.entity
                                             , reason = WouldStayAlone e1 e2
                                             }
@@ -224,12 +241,86 @@ subscriptions model =
 
 
 view : Model -> Browser.Document Msg
-view { problem, interactionState } =
+view model =
     { title = "River Crossing"
     , body =
-        [ viewDotGraph interactionState problem.topology problem.current
-        ]
+        if model.problem.current == model.problem.goal then
+            viewWin
+
+        else
+            viewGame model
     }
+
+
+viewGame : Model -> List (Html Msg)
+viewGame { problem, interactionState, message } =
+    [ Html.div [ Attrs.class "game" ]
+        [ viewReset problem
+        , viewDotGraph interactionState problem.topology problem.current
+        , viewMessage message
+        ]
+    ]
+
+
+viewWin : List (Html Msg)
+viewWin =
+    [ Html.text "You won!!!" ]
+
+
+viewReset : Problem -> Html Msg
+viewReset problem =
+    Html.button
+        [ Attrs.disabled <| problem.current == problem.initial
+        , Events.onClick Reset
+        ]
+        [ Html.text "Reset" ]
+
+
+viewMessage : Maybe UserMessage -> Html Msg
+viewMessage maybeMessage =
+    case maybeMessage of
+        Nothing ->
+            Html.text ""
+
+        Just message ->
+            Html.div []
+                [ Html.span [] [ Html.text <| messageToString message ]
+                , Html.span
+                    [ Attrs.class "dismiss"
+                    , Events.onClick DismissMessage
+                    ]
+                    [ Html.text "Dismiss" ]
+                ]
+
+
+messageToString : UserMessage -> String
+messageToString message =
+    case message of
+        CantMove { oldLandId, newLandId, entity, reason } ->
+            "Can't move "
+                ++ Entity.toString entity
+                ++ " from land "
+                ++ String.fromInt oldLandId
+                ++ " to land "
+                ++ String.fromInt newLandId
+                ++ ", because "
+                ++ cantMoveReasonToString reason
+
+
+cantMoveReasonToString : CantMoveReason -> String
+cantMoveReasonToString reason =
+    case reason of
+        WouldStayAlone e1 e2 ->
+            Entity.toString e1
+                ++ " and "
+                ++ Entity.toString e2
+                ++ " would stay alone!"
+
+        DoesntHaveBoat ->
+            "there is no boat to sail on!"
+
+        DoesntHaveFarmer ->
+            "the farmer is not there!"
 
 
 viewDotGraph : InteractionState -> Topology -> ProblemState -> Html Msg

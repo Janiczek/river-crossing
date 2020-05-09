@@ -16,8 +16,8 @@ type alias Land =
          ourselves the possibility to have multiple of each entity at once!
       -}
       entities : Bag Entity
-    , hasBoat : Bool
-    , hasFarmer : Bool
+    , hasBoat : Bool -- TODO make this an Int, otherwise we'll be losing boats
+    , hasFarmer : Bool -- TODO this too maybe? play with the puzzle design to find out
     }
 
 

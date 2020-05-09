@@ -3,6 +3,7 @@ module Problem exposing
     , ProblemState
     , init
     , moveTo
+    , reset
     )
 
 import AssocList as Dict exposing (Dict)
@@ -48,12 +49,34 @@ init { topology, initial, goal } =
 
 moveTo : Int -> { landId : Int, entity : Entity } -> Problem -> Problem
 moveTo newLandId holded problem =
-    {-
-       { problem
-       | current = problem.current
-       |> Dict.update -- remove entity,farmer,boat from old
-       |> Dict.update -- add to new, add
-       }
-    -}
-    -- TODO
-    problem
+    { problem
+        | current =
+            problem.current
+                |> Dict.update holded.landId
+                    (Maybe.map
+                        (\oldLand ->
+                            { oldLand
+                                | -- TODO this should become a decrement of Int
+                                  hasBoat = False
+                                , hasFarmer = False
+                                , entities = Bag.remove holded.entity oldLand.entities
+                            }
+                        )
+                    )
+                |> Dict.update newLandId
+                    (Maybe.map
+                        (\newLand ->
+                            { newLand
+                                | -- TODO this should become an increment of Int
+                                  hasBoat = True
+                                , hasFarmer = True
+                                , entities = Bag.insert holded.entity newLand.entities
+                            }
+                        )
+                    )
+    }
+
+
+reset : Problem -> Problem
+reset problem =
+    { problem | current = problem.initial }
