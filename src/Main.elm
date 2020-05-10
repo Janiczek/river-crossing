@@ -116,10 +116,21 @@ itemClicked landId item model =
             ( model, Cmd.none )
 
         ( DoingNothing, Farmer ) ->
-            hold landId item model
+            if Problem.landHasBoats landId model.problem then
+                hold landId item model
+
+            else
+                doNothing model
 
         ( DoingNothing, Entity entity ) ->
-            hold landId item model
+            if
+                Problem.landHasFarmers landId model.problem
+                    && Problem.landHasBoats landId model.problem
+            then
+                hold landId item model
+
+            else
+                doNothing model
 
         ( HoldingItem holded, Land ) ->
             if landId == holded.landId then
@@ -129,7 +140,14 @@ itemClicked landId item model =
                 tryToMoveTo landId holded model
 
         ( HoldingItem holded, Farmer ) ->
-            ( model, Cmd.none )
+            if
+                Problem.landHasBoats landId model.problem
+                    && (holded /= { landId = landId, item = Farmer })
+            then
+                hold landId item model
+
+            else
+                doNothing model
 
         ( HoldingItem holded, Entity entity ) ->
             if item == holded.item && landId == holded.landId then
@@ -165,7 +183,7 @@ tryToMoveTo newLandId holded model =
     Dict.get holded.landId model.problem.current
         |> Maybe.map
             (\oldLand ->
-                if not oldLand.hasFarmer then
+                if oldLand.farmers <= 0 then
                     ( { model
                         | interactionState = DoingNothing
                         , message =
@@ -180,7 +198,7 @@ tryToMoveTo newLandId holded model =
                     , Cmd.none
                     )
 
-                else if not oldLand.hasBoat then
+                else if oldLand.boats <= 0 then
                     ( { model
                         | interactionState = DoingNothing
                         , message =
@@ -277,7 +295,7 @@ viewGame : Model -> List (Html Msg)
 viewGame { problem, interactionState, message } =
     [ Html.div [ Attrs.class "game" ]
         [ viewReset problem
-        , viewDotGraph interactionState problem.topology problem.current
+        , viewDotGraph interactionState problem
         , viewMessage message
         ]
     ]
@@ -292,6 +310,7 @@ viewReset : Problem -> Html Msg
 viewReset problem =
     Html.button
         [ Attrs.disabled <| problem.current == problem.initial
+        , Attrs.class "reset-button"
         , Events.onClick Reset
         ]
         [ Html.text "Reset" ]
@@ -344,10 +363,10 @@ cantMoveReasonToString reason =
             "the farmer is not there!"
 
 
-viewDotGraph : InteractionState -> Topology -> ProblemState -> Html Msg
-viewDotGraph interactionState topology state =
+viewDotGraph : InteractionState -> Problem -> Html Msg
+viewDotGraph interactionState problem =
     Html.node "x-graphviz"
-        [ Attrs.attribute "dot" <| Problem.toDot interactionState topology state
+        [ Attrs.attribute "dot" <| Problem.toDot interactionState problem
         , Events.on "x-graphviz-node-click" nodeClickDecoder
         ]
         []

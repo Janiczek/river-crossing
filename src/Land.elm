@@ -16,8 +16,8 @@ type alias Land =
          ourselves the possibility to have multiple of each entity at once!
       -}
       entities : Bag Entity
-    , hasBoat : Bool -- TODO make this an Int, otherwise we'll be losing boats
-    , hasFarmer : Bool -- TODO this too maybe? play with the puzzle design to find out
+    , boats : Int
+    , farmers : Int
     }
 
 
@@ -38,6 +38,6 @@ idFromString string =
 
 eq : Land -> Land -> Bool
 eq a b =
-    (a.hasBoat == b.hasBoat)
-        && (a.hasFarmer == b.hasFarmer)
+    (a.boats == b.boats)
+        && (a.farmers == b.farmers)
         && Bag.eq a.entities b.entities

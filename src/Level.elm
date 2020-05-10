@@ -1,4 +1,4 @@
-module Level exposing (..)
+module Level exposing (canonical)
 
 import AssocList as Dict exposing (Dict)
 import Bag
@@ -17,14 +17,14 @@ canonical =
             Dict.fromList
                 [ ( 1
                   , { entities = Bag.fromList [ Wolf, Goat, Cabbage ]
-                    , hasBoat = True
-                    , hasFarmer = True
+                    , boats = 1
+                    , farmers = 1
                     }
                   )
                 , ( 2
                   , { entities = Bag.empty
-                    , hasBoat = False
-                    , hasFarmer = False
+                    , boats = 0
+                    , farmers = 0
                     }
                   )
                 ]
@@ -32,14 +32,14 @@ canonical =
             Dict.fromList
                 [ ( 1
                   , { entities = Bag.empty
-                    , hasBoat = False
-                    , hasFarmer = False
+                    , boats = 0
+                    , farmers = 0
                     }
                   )
                 , ( 2
                   , { entities = Bag.fromList [ Wolf, Goat, Cabbage ]
-                    , hasBoat = True
-                    , hasFarmer = True
+                    , boats = 1
+                    , farmers = 1
                     }
                   )
                 ]

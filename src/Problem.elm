@@ -3,6 +3,8 @@ module Problem exposing
     , ProblemState
     , hasWon
     , init
+    , landHasBoats
+    , landHasFarmers
     , moveTo
     , reset
     )
@@ -71,9 +73,8 @@ moveTo newLandId holded problem =
                     (Maybe.map
                         (\oldLand ->
                             { oldLand
-                                | -- TODO this should become a decrement of Int
-                                  hasBoat = False
-                                , hasFarmer = False
+                                | boats = oldLand.boats - 1
+                                , farmers = oldLand.boats - 1
                                 , entities =
                                     entityToMove
                                         |> Maybe.map (\entity -> Bag.remove entity oldLand.entities)
@@ -85,9 +86,8 @@ moveTo newLandId holded problem =
                     (Maybe.map
                         (\newLand ->
                             { newLand
-                                | -- TODO this should become an increment of Int
-                                  hasBoat = True
-                                , hasFarmer = True
+                                | boats = newLand.boats + 1
+                                , farmers = newLand.farmers + 1
                                 , entities =
                                     entityToMove
                                         |> Maybe.map (\entity -> Bag.insert entity newLand.entities)
@@ -103,6 +103,9 @@ reset problem =
     { problem | current = problem.initial }
 
 
+{-| TODO generalize a bit: don't take the numbers in Goal to be
+"exactly this number of items" but "at least this number of items".
+-}
 hasWon : Problem -> Bool
 hasWon { current, goal } =
     eq current goal
@@ -121,3 +124,17 @@ eq a b =
         (normalize a)
         (normalize b)
         |> List.all (\( aLand, bLand ) -> Land.eq aLand bLand)
+
+
+landHasBoats : Int -> Problem -> Bool
+landHasBoats landId problem =
+    Dict.get landId problem.current
+        |> Maybe.map (\land -> land.boats > 0)
+        |> Maybe.withDefault False
+
+
+landHasFarmers : Int -> Problem -> Bool
+landHasFarmers landId problem =
+    Dict.get landId problem.current
+        |> Maybe.map (\land -> land.farmers > 0)
+        |> Maybe.withDefault False
