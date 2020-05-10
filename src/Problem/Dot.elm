@@ -78,6 +78,13 @@ toDot interactionState problem =
                         HoldingItem h ->
                             h.item == item && h.landId == landId
 
+                isTransitivelyActive : Bool
+                isTransitivelyActive =
+                    {- Is this a farmer that would be travelling with the
+                       currently holded entity anyway?
+                    -}
+                    item == Farmer && Game.isHoldingAnEntity interactionState
+
                 isHoldingSomethingElse : Bool
                 isHoldingSomethingElse =
                     case interactionState of
@@ -97,7 +104,7 @@ toDot interactionState problem =
                     then
                         "gray"
 
-                    else if isActive then
+                    else if isActive || isTransitivelyActive then
                         "blue"
 
                     else if isHoldingSomethingElse then
@@ -161,27 +168,32 @@ toDot interactionState problem =
             else
                 ""
 
+        clickables : Land -> List ( Item, Int )
+        clickables land =
+            (( Farmer, land.farmers )
+                :: List.map
+                    (Tuple.mapFirst Entity)
+                    (Bag.toCountedList land.entities
+                        |> List.sortBy (Tuple.first >> Entity.toString)
+                    )
+            )
+                |> List.filter (\( _, n ) -> n > 0)
+
         vertexStrings : List String
         vertexStrings =
             lands
                 |> List.map
                     (\( landId, land ) ->
-                        let
-                            clickables : List ( Item, Int )
-                            clickables =
-                                (( Farmer, land.farmers )
-                                    :: List.map
-                                        (Tuple.mapFirst Entity)
-                                        (Bag.toCountedList land.entities)
-                                )
-                                    |> List.filter (\( _, n ) -> n > 0)
-                        in
                         Land.idToString landId
                             ++ " [label = < "
                             ++ tableTag
                             ++ landTitleRow landId
                             ++ boatRow land
-                            ++ String.join "" (List.map (toRow landId) clickables)
+                            ++ String.join ""
+                                (List.map
+                                    (toRow landId)
+                                    (clickables land)
+                                )
                             ++ "</TABLE> > ];\n"
                     )
 

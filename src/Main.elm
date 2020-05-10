@@ -294,11 +294,20 @@ view model =
 viewGame : Model -> List (Html Msg)
 viewGame { problem, interactionState, message } =
     [ Html.div [ Attrs.class "game" ]
-        [ viewReset problem
+        [ viewDescription
+        , viewReset problem
         , viewDotGraph interactionState problem
         , viewMessage message
         ]
     ]
+
+
+viewDescription : Html Msg
+viewDescription =
+    Html.div []
+        [ Html.h1 [] [ Html.text "River Crossing" ]
+        , Html.p [] [ Html.text "TODO write a description :)" ]
+        ]
 
 
 viewWin : List (Html Msg)

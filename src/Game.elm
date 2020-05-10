@@ -1,6 +1,7 @@
 module Game exposing
     ( InteractionState(..)
     , Item(..)
+    , isHoldingAnEntity
     , itemFromString
     , itemToId
     , itemToString
@@ -63,3 +64,21 @@ itemFromString string =
 
         _ ->
             Nothing
+
+
+isHoldingAnEntity : InteractionState -> Bool
+isHoldingAnEntity interactionState =
+    case interactionState of
+        DoingNothing ->
+            False
+
+        HoldingItem { item } ->
+            case item of
+                Farmer ->
+                    False
+
+                Land ->
+                    False
+
+                Entity _ ->
+                    True
